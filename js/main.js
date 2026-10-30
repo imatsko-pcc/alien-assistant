@@ -288,7 +288,9 @@
     } catch (e) {
       // A key without "Voices: read" can still speak with ElevenLabs' standard voices
       list = voice.STANDARD_VOICES;
-      $('vStatus').textContent = e.message + ' Showing ElevenLabs standard voices instead. Press Test voice to check the key.';
+      $('vStatus').textContent = /voices_read/.test(e.message)
+        ? "Key saved. It can't list your own voices, so here are ElevenLabs' standard voices. Press Test voice! (To see all your voices, give the key the \"Voices: read\" permission.)"
+        : e.message + ' Showing ElevenLabs standard voices instead. Press Test voice to check the key.';
     }
     sel.textContent = '';
     list.forEach((v) => sel.add(new Option(v.name, v.id)));
