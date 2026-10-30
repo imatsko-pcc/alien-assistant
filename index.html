@@ -7,7 +7,7 @@
   <meta name="description" content="A 3D alien head that copies your facial expressions through your webcam.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
   <canvas id="scene" aria-label="3D alien head"></canvas>
@@ -42,6 +42,14 @@
     <div class="vp-head"><b>VOICE SETTINGS</b><button type="button" id="vClose" class="vp-x" aria-label="Close">✕</button></div>
     <label class="v-check"><input type="checkbox" id="vOn"> Alien talks</label>
     <label class="v-check"><input type="checkbox" id="vReact"> React out loud to my expressions</label>
+    <label>Character
+      <select id="vPreset">
+        <option value="squeaky">👽 Squeaky alien</option>
+        <option value="warrior">⚔️ Warrior alien (Klingon-style)</option>
+        <option value="robot">🤖 Robot alien</option>
+        <option value="custom">🎛️ Custom</option>
+      </select>
+    </label>
     <label>Voice engine
       <select id="vEngine">
         <option value="eleven">ElevenLabs</option>
@@ -56,7 +64,14 @@
       </div>
     </div>
     <label id="vVoiceRow">Voice <select id="vVoice"><option value="">Add a key to load voices</option></select></label>
-    <label class="v-slider">Pitch <output id="vPitchOut"></output><input type="range" id="vPitch" min="0.8" max="2" step="0.05"></label>
+    <label>Effect (ElevenLabs only)
+      <select id="vEffect">
+        <option value="none">None</option>
+        <option value="growl">Warrior growl</option>
+        <option value="robot">Robot</option>
+      </select>
+    </label>
+    <label class="v-slider">Pitch <output id="vPitchOut"></output><input type="range" id="vPitch" min="0.6" max="2" step="0.05"></label>
     <label class="v-slider">Speed <output id="vSpeedOut"></output><input type="range" id="vSpeed" min="0.6" max="1.6" step="0.05"></label>
     <label class="v-slider">Volume <output id="vVolOut"></output><input type="range" id="vVol" min="0" max="1" step="0.05"></label>
     <button type="button" id="vTest" class="btn primary">Test voice</button>
@@ -65,9 +80,9 @@
   </form>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-  <script src="js/alien-head.js?v=4"></script>
-  <script src="js/face-tracker.js?v=4"></script>
-  <script src="js/voice.js?v=4"></script>
-  <script src="js/main.js?v=4"></script>
+  <script src="js/alien-head.js?v=5"></script>
+  <script src="js/face-tracker.js?v=5"></script>
+  <script src="js/voice.js?v=5"></script>
+  <script src="js/main.js?v=5"></script>
 </body>
 </html>

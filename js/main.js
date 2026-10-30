@@ -237,6 +237,31 @@
     wink: ['Did you just wink at me? Smooth.', 'Wink detected. Your secret is safe with me.'],
     puffed: ['Puffy cheeks! Are you holding your breath in space?', 'You look like a pufferfish from planet Earth!']
   };
+  // The warrior sprinkles in a little Klingon: nuqneH ("what do you want?", the
+  // usual greeting) and Qapla' ("success!").
+  const WARRIOR_LINES = {
+    greet: ['nuqneH! I see you, Earthling. Show me your warrior face!', 'Greetings, Earthling. Today is a glorious day to make faces!'],
+    happy: ["Qapla'! Your smile brings honor to your house!", "A warrior's grin! Glorious!"],
+    surprised: ['You look startled, Earthling. A warrior fears nothing!', 'What is it? An enemy ship? Raise the shields!'],
+    angry: ['Yes! That is the face of a true warrior!', "Magnificent fury! Qapla'!"],
+    sad: ['Do not weep, Earthling. Sing a battle song instead!', 'Even the mightiest warrior has dark days. Rise again!'],
+    kissy: ['Hah! Even warriors need love.', 'A kiss before battle? Bold!'],
+    wink: ['A wink? Cunning, like a true strategist.', 'I see your secret plan, Earthling.'],
+    puffed: ['You fill your lungs for a battle cry! Let it out!', 'Puffed up like a warrior ready to charge!']
+  };
+  const TEST_LINES = {
+    squeaky: 'Greetings, Earthling! This is my voice. Do you like it?',
+    warrior: "nuqneH! I am the alien warrior. Today we make faces with honor. Qapla'!",
+    robot: 'Beep boop. Greetings, Earthling. Facial scan complete.',
+    custom: 'Greetings, Earthling! This is my voice. Do you like it?'
+  };
+  // Character presets: voice name to look for, pitch, speed and effect
+  const PRESETS = {
+    squeaky: { find: /jessica|lily|laura|alice/i, pitch: 1.5, speed: 1.0, effect: 'none' },
+    warrior: { find: /fierce warrior|harry|callum|george|roger|charlie/i, pitch: 0.7, speed: 0.95, effect: 'growl' },
+    robot: { find: /river|will|liam|brian|eric/i, pitch: 0.95, speed: 0.95, effect: 'robot' }
+  };
+  const lines = () => (vs.preset === 'warrior' ? WARRIOR_LINES : LINES);
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
   let greeted = false;
   let reactMood = 'neutral';
@@ -246,13 +271,13 @@
   // Say something about a new expression once it has been held for a moment.
   function maybeReact(m, time, seeing) {
     if (!seeing || !vs.enabled) return;
-    if (!greeted) { greeted = true; lastReactAt = time; voice.speak(pick(LINES.greet)); return; }
+    if (!greeted) { greeted = true; lastReactAt = time; voice.speak(pick(lines().greet)); return; }
     if (m !== reactMood) { reactMood = m; reactSince = time; return; }
     if (!vs.reactions || m === 'neutral' || voice.speaking()) return;
     if (time - reactSince > 0.8 && time - lastReactAt > 7) {
       lastReactAt = time;
       reactSince = Infinity; // once per held expression
-      voice.speak(pick(LINES[m]));
+      voice.speak(pick(lines()[m]));
     }
   }
 
@@ -261,6 +286,8 @@
     $('vOn').checked = vs.enabled;
     $('vReact').checked = vs.reactions;
     $('vEngine').value = vs.engine;
+    $('vPreset').value = vs.preset;
+    $('vEffect').value = vs.effect;
     $('vPitch').value = vs.pitch;
     $('vSpeed').value = vs.speed;
     $('vVol').value = vs.volume;
@@ -312,7 +339,7 @@
   $('vTest').addEventListener('click', async () => {
     if ($('vKey').value.trim() !== vs.apiKey) saveKey();
     $('vStatus').textContent = voice.usingEleven ? 'Asking ElevenLabs…' : 'Using the free browser voice (no ElevenLabs key saved).';
-    const ok = await voice.speak('Greetings, Earthling! This is my voice. Do you like it?', true);
+    const ok = await voice.speak(TEST_LINES[vs.preset] || TEST_LINES.squeaky, true);
     if (ok && voice.usingEleven) $('vStatus').textContent = 'ElevenLabs voice working!';
   });
   $('vOn').addEventListener('change', (ev) => { setVoice({ enabled: ev.target.checked }); if (!vs.enabled) voice.stop(); });
@@ -332,9 +359,21 @@
   $('vKey').addEventListener('paste', () => setTimeout(saveKey, 0));
   $('vKey').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); saveKey(); } });
   $('vKeySave').addEventListener('click', saveKey);
-  $('vVoice').addEventListener('change', (ev) => setVoice({ voiceId: ev.target.value }));
+  $('vVoice').addEventListener('change', (ev) => setVoice({ voiceId: ev.target.value, preset: 'custom' }));
+  $('vEffect').addEventListener('change', (ev) => setVoice({ effect: ev.target.value, preset: 'custom' }));
   [['vPitch', 'pitch'], ['vSpeed', 'speed'], ['vVol', 'volume']].forEach(([id, key]) => {
-    $(id).addEventListener('input', (ev) => setVoice({ [key]: Number(ev.target.value) }));
+    $(id).addEventListener('input', (ev) => setVoice(key === 'volume' ? { volume: Number(ev.target.value) } : { [key]: Number(ev.target.value), preset: 'custom' }));
+  });
+  // Picking a character sets pitch, speed, effect and the closest-matching voice
+  $('vPreset').addEventListener('change', (ev) => {
+    const name = ev.target.value;
+    const p = PRESETS[name];
+    if (!p) { setVoice({ preset: name }); return; }
+    const opts = [...$('vVoice').options].filter((o) => o.value);
+    const match = opts.find((o) => p.find.test(o.text));
+    setVoice({ preset: name, pitch: p.pitch, speed: p.speed, effect: p.effect, voiceId: match ? match.value : vs.voiceId });
+    if (match) $('vVoice').value = match.value;
+    $('vStatus').textContent = (match ? 'Voice: ' + match.text.split(' - ')[0] + '. ' : '') + 'Press Test voice!';
   });
   $('sayForm').addEventListener('submit', (ev) => {
     ev.preventDefault();

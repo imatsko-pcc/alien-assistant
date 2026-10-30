@@ -20,7 +20,8 @@
   const STORE = 'alienHeadVoice';
   const DEFAULTS = {
     enabled: true, engine: 'eleven', apiKey: '', voiceId: '',
-    pitch: 1.5, speed: 1.0, volume: 0.85, reactions: true
+    pitch: 1.5, speed: 1.0, volume: 0.85, reactions: true,
+    preset: 'squeaky', effect: 'none'
   };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -49,8 +50,59 @@
         buf = new Uint8Array(analyser.fftSize);
         analyser.connect(actx.destination);
       }
-      actx.createMediaElementSource(el).connect(analyser);
+      const src = actx.createMediaElementSource(el);
+      effectChain(src, el).connect(analyser);
     } catch (e) { /* plays without measured lip sync */ }
+  }
+
+  function distortionCurve(k) {
+    const n = 1024, c = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const x = (i * 2) / n - 1; c[i] = ((1 + k) * x) / (1 + k * Math.abs(x)); }
+    return c;
+  }
+
+  /** Voice effects: a gravelly warrior growl, or a ring-modulated robot. */
+  function effectChain(src, el) {
+    const out = actx.createGain();
+    const oscs = [];
+    if (settings.effect === 'growl') {
+      const shaper = actx.createWaveShaper();
+      shaper.curve = distortionCurve(14);
+      shaper.oversample = '4x';
+      const bass = actx.createBiquadFilter();
+      bass.type = 'lowshelf'; bass.frequency.value = 250; bass.gain.value = 9;
+      const tame = actx.createBiquadFilter();
+      tame.type = 'lowpass'; tame.frequency.value = 3400;
+      const rumble = actx.createGain(); // fast flutter makes it sound gravelly
+      rumble.gain.value = 0.75;
+      const lfo = actx.createOscillator();
+      lfo.frequency.value = 34;
+      const depth = actx.createGain();
+      depth.gain.value = 0.22;
+      lfo.connect(depth).connect(rumble.gain);
+      oscs.push(lfo);
+      src.connect(shaper).connect(bass).connect(tame).connect(rumble).connect(out);
+      out.gain.value = 0.7;
+    } else if (settings.effect === 'robot') {
+      const ring = actx.createGain();
+      ring.gain.value = 0;
+      const carrier = actx.createOscillator();
+      carrier.frequency.value = 60;
+      carrier.connect(ring.gain);
+      oscs.push(carrier);
+      const dry = actx.createGain();
+      dry.gain.value = 0.35;
+      src.connect(ring).connect(out);
+      src.connect(dry).connect(out);
+      out.gain.value = 1.3;
+    } else {
+      src.connect(out);
+    }
+    oscs.forEach((o) => o.start());
+    const cleanup = () => oscs.forEach((o) => { try { o.stop(); } catch (e) { /* already stopped */ } });
+    el.addEventListener('ended', cleanup);
+    el.addEventListener('pause', cleanup);
+    return out;
   }
 
   function useEleven() { return settings.engine === 'eleven' && !!settings.apiKey; }
