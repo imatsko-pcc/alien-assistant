@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alien Assistant</title>
+  <meta name="description" content="A talking 3D alien assistant for the corner of any web page. It reacts out loud to what you do.">
+  <link rel="stylesheet" href="css/demo.css?v=1">
+</head>
+<body>
+  <header class="hero">
+    <p class="eyebrow">Demo site</p>
+    <h1>Meet your <span>alien assistant</span></h1>
+    <p class="lead">The little alien in the corner watches what you do on this page and talks about it. Click things, fill in the form, scroll down, copy some text, or wander off and come back.</p>
+    <div class="actions">
+      <button type="button" class="btn primary">Get started</button>
+      <button type="button" class="btn">Learn more</button>
+      <a class="btn" href="#how">How it works</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Try the form</h2>
+      <p class="muted">The alien notices which field you use, never what you type. Nothing here is sent anywhere.</p>
+      <form id="demoForm" class="form">
+        <label>Your name <input type="text" name="name" placeholder="Zorp"></label>
+        <label>Favorite planet <input type="text" name="planet" placeholder="Neptune"></label>
+        <label>Message <textarea name="message" rows="3" placeholder="Say hi to the alien"></textarea></label>
+        <label class="check"><input type="checkbox" name="news"> Send me space news</label>
+        <button type="submit" class="btn primary">Send message</button>
+        <p id="formNote" class="muted" role="status"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>More things to poke</h2>
+      <div class="actions">
+        <button type="button" class="btn">Launch rocket</button>
+        <button type="button" class="btn">Feed the cat</button>
+        <button type="button" class="btn" id="breakBtn">Break something</button>
+        <button type="button" class="btn" id="sayBtn">Make the alien say something</button>
+      </div>
+      <p class="muted">Tip: click one button really fast four times. Or select some text on this page and press Ctrl+C.</p>
+    </section>
+
+    <section class="card" id="how">
+      <h2>How it works</h2>
+      <p>The assistant is one script tag. It loads a 3D alien head (three.js), listens for things you do on the page, and speaks with an ElevenLabs voice (your own key, saved only in your browser) or your browser's free built-in voice.</p>
+      <p>Open its settings with the ⚙ button next to the alien. You can mute it, make it quieter, choose what it reacts to, switch characters (squeaky, Klingon-style warrior or robot), tune pitch and speed, and move it to the other corner.</p>
+      <pre><code>&lt;script src="assistant/alien-assistant.js" defer&gt;&lt;/script&gt;</code></pre>
+    </section>
+
+    <section class="card tall">
+      <h2>A long section to scroll through</h2>
+      <p>The Moon drifts about 3.8 centimeters farther from Earth every year. Jupiter's Great Red Spot is a storm wider than Earth. A day on Venus is longer than its year. Neutron stars can spin hundreds of times a second.</p>
+      <p>Keep scrolling. The alien will say something when you reach the bottom.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>You reached the bottom. 👽</p>
+  </footer>
+
+  <script>
+    document.getElementById('demoForm').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      document.getElementById('formNote').textContent = 'Message "sent" (this demo sends nothing).';
+      this.reset();
+    });
+    document.getElementById('breakBtn').addEventListener('click', function () {
+      setTimeout(function () { throw new Error('Demo error: something broke on purpose'); }, 0);
+    });
+    document.getElementById('sayBtn').addEventListener('click', function () {
+      if (window.AlienAssistant && window.AlienAssistant.say) {
+        window.AlienAssistant.say('The page asked me to say this. Hello from the code!', 'happy');
+      }
+    });
+  </script>
+  <script src="assistant/alien-assistant.js?v=1" defer></script>
+</body>
+</html>
