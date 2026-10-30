@@ -255,11 +255,11 @@
     robot: 'Beep boop. Greetings, Earthling. Facial scan complete.',
     custom: 'Greetings, Earthling! This is my voice. Do you like it?'
   };
-  // Character presets: voice name to look for, pitch, speed and effect
+  // Character presets: voice names to look for (best first), pitch, speed and effect
   const PRESETS = {
-    squeaky: { find: /jessica|lily|laura|alice/i, pitch: 1.5, speed: 1.0, effect: 'none' },
-    warrior: { find: /fierce warrior|harry|callum|george|roger|charlie/i, pitch: 0.7, speed: 0.95, effect: 'growl' },
-    robot: { find: /river|will|liam|brian|eric/i, pitch: 0.95, speed: 0.95, effect: 'robot' }
+    squeaky: { find: ['jessica', 'lily', 'laura', 'alice'], pitch: 1.5, speed: 1.0, effect: 'none' },
+    warrior: { find: ['fierce warrior', 'harry', 'callum', 'george', 'roger', 'charlie'], pitch: 0.7, speed: 0.95, effect: 'growl' },
+    robot: { find: ['river', 'will', 'liam', 'brian', 'eric'], pitch: 0.95, speed: 0.95, effect: 'robot' }
   };
   const lines = () => (vs.preset === 'warrior' ? WARRIOR_LINES : LINES);
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -370,7 +370,11 @@
     const p = PRESETS[name];
     if (!p) { setVoice({ preset: name }); return; }
     const opts = [...$('vVoice').options].filter((o) => o.value);
-    const match = opts.find((o) => p.find.test(o.text));
+    let match = null;
+    for (const want of p.find) {
+      match = opts.find((o) => o.text.toLowerCase().includes(want));
+      if (match) break;
+    }
     setVoice({ preset: name, pitch: p.pitch, speed: p.speed, effect: p.effect, voiceId: match ? match.value : vs.voiceId });
     if (match) $('vVoice').value = match.value;
     $('vStatus').textContent = (match ? 'Voice: ' + match.text.split(' - ')[0] + '. ' : '') + 'Press Test voice!';
