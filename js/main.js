@@ -46,11 +46,12 @@
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    // Fit about 4.6 units of height, or 3.8 of width on narrow screens
+    // Fit about 5.4 units of height, or 3.8 of width on narrow screens,
+    // aimed low so the head sits above the controls at the bottom
     const half = Math.tan((camera.fov * Math.PI) / 360);
-    const dist = Math.max(2.3 / half, 1.9 / (half * camera.aspect));
-    camera.position.set(0, 0.2, dist);
-    camera.lookAt(0, 0.25, 0);
+    const dist = Math.max(2.7 / half, 1.9 / (half * camera.aspect));
+    camera.position.set(0, -0.2, dist);
+    camera.lookAt(0, -0.45, 0);
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
@@ -223,6 +224,105 @@
   $('previewBtn').addEventListener('click', () => { preview = !preview; save('alienPreview', preview); renderButtons(); });
   renderButtons();
 
+  // ---------- Voice ----------
+  const voice = window.AlienVoice;
+  const vs = voice.settings;
+  const LINES = {
+    greet: ["Greetings, Earthling! Make a face and I'll copy it.", 'Oh, hello there! I can see you now. Let us make faces together!'],
+    happy: ["Ooh, a smile! Earthlings are adorable when they're happy.", 'That smile could power a whole starship!', 'Happy face detected. My antennae are glowing!'],
+    surprised: ['Whoa! What did you see? A comet?', "Surprised? Me too. I'm always surprised.", 'Eyebrows up, mouth open. Classic Earthling shock!'],
+    angry: ['Uh oh, grumpy face. Did someone steal your space snacks?', 'Easy there, Earthling. Deep breaths.', 'Such a fierce frown! I am trembling in my antennae.'],
+    sad: ["Aww, don't be sad. Want to see my antennae wiggle?", 'Sad face detected. Sending you a cosmic hug!'],
+    kissy: ['Mwah! Right back at you, Earthling.', 'Kissy face! On my planet that means hello.'],
+    wink: ['Did you just wink at me? Smooth.', 'Wink detected. Your secret is safe with me.'],
+    puffed: ['Puffy cheeks! Are you holding your breath in space?', 'You look like a pufferfish from planet Earth!']
+  };
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  let greeted = false;
+  let reactMood = 'neutral';
+  let reactSince = 0;
+  let lastReactAt = -100;
+
+  // Say something about a new expression once it has been held for a moment.
+  function maybeReact(m, time, seeing) {
+    if (!seeing || !vs.enabled) return;
+    if (!greeted) { greeted = true; lastReactAt = time; voice.speak(pick(LINES.greet)); return; }
+    if (m !== reactMood) { reactMood = m; reactSince = time; return; }
+    if (!vs.reactions || m === 'neutral' || voice.speaking()) return;
+    if (time - reactSince > 0.8 && time - lastReactAt > 7) {
+      lastReactAt = time;
+      reactSince = Infinity; // once per held expression
+      voice.speak(pick(LINES[m]));
+    }
+  }
+
+  function renderVoice() {
+    $('muteBtn').textContent = vs.enabled ? '🔊 Voice: on' : '🔇 Voice: off';
+    $('vOn').checked = vs.enabled;
+    $('vReact').checked = vs.reactions;
+    $('vEngine').value = vs.engine;
+    $('vPitch').value = vs.pitch;
+    $('vSpeed').value = vs.speed;
+    $('vVol').value = vs.volume;
+    $('vPitchOut').textContent = vs.pitch.toFixed(2) + 'x';
+    $('vSpeedOut').textContent = vs.speed.toFixed(2) + 'x';
+    $('vVolOut').textContent = Math.round(vs.volume * 100) + '%';
+    const eleven = vs.engine === 'eleven';
+    $('vKeyRow').classList.toggle('hidden', !eleven);
+    $('vVoiceRow').classList.toggle('hidden', !eleven);
+  }
+  function setVoice(changes) {
+    Object.assign(vs, changes);
+    voice.save();
+    renderVoice();
+  }
+
+  async function loadVoices() {
+    const sel = $('vVoice');
+    if (!vs.apiKey) { sel.innerHTML = '<option value="">Add a key to load voices</option>'; return; }
+    $('vStatus').textContent = 'Loading your ElevenLabs voices…';
+    try {
+      const list = await voice.listVoices();
+      sel.textContent = '';
+      list.forEach((v) => sel.add(new Option(v.name, v.id)));
+      if (!list.some((v) => v.id === vs.voiceId) && list.length) { vs.voiceId = list[0].id; voice.save(); }
+      sel.value = vs.voiceId;
+      $('vStatus').textContent = list.length + ' voices loaded.';
+    } catch (e) {
+      $('vStatus').textContent = e.message;
+    }
+  }
+
+  voice.onError((m) => { $('vStatus').textContent = m + ' Using the browser voice for now.'; status(m); });
+  $('muteBtn').addEventListener('click', () => { setVoice({ enabled: !vs.enabled }); if (!vs.enabled) voice.stop(); });
+  $('voiceBtn').addEventListener('click', () => {
+    const panel = $('voicePanel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+      $('vKey').value = vs.apiKey;
+      if (vs.apiKey && $('vVoice').options.length < 2) loadVoices();
+    }
+  });
+  $('vClose').addEventListener('click', () => $('voicePanel').classList.add('hidden'));
+  $('vTest').addEventListener('click', () => {
+    $('vStatus').textContent = '';
+    voice.speak("Greetings, Earthling! This is my voice. Do you like it?", true);
+  });
+  $('vOn').addEventListener('change', (ev) => { setVoice({ enabled: ev.target.checked }); if (!vs.enabled) voice.stop(); });
+  $('vReact').addEventListener('change', (ev) => setVoice({ reactions: ev.target.checked }));
+  $('vEngine').addEventListener('change', (ev) => { setVoice({ engine: ev.target.value }); if (ev.target.value === 'eleven') loadVoices(); });
+  $('vKey').addEventListener('change', (ev) => { setVoice({ apiKey: ev.target.value.trim(), voiceId: '' }); loadVoices(); });
+  $('vVoice').addEventListener('change', (ev) => setVoice({ voiceId: ev.target.value }));
+  [['vPitch', 'pitch'], ['vSpeed', 'speed'], ['vVol', 'volume']].forEach(([id, key]) => {
+    $(id).addEventListener('input', (ev) => setVoice({ [key]: Number(ev.target.value) }));
+  });
+  $('sayForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const text = $('sayText').value.trim();
+    if (text) voice.speak(text, true);
+  });
+  renderVoice();
+
   // ---------- Loop ----------
   let last = performance.now();
   function loop(now) {
@@ -236,12 +336,23 @@
       else if (face === null && time - lastFaceAt > 0.6) faceTarget = null;
     }
     const seeing = tracker.running && faceTarget && time - lastFaceAt < 0.6;
-    const target = forced || (seeing ? faceTarget : idle(time, !tracker.running));
+    let target = forced || (seeing ? faceTarget : idle(time, !tracker.running));
 
     const m = moodOf(target);
     if (m !== mood) { mood = m; alien.setMood(m); }
     const label = (seeing ? '' : tracker.running ? 'Looking for you… ' : 'Demo: ') + MOODS[m];
     if (label !== moodLabel) { moodLabel = label; $('mood').textContent = label; }
+    maybeReact(m, time, seeing);
+
+    // Move the mouth with the voice (on top of whatever the face is doing)
+    const talk = voice.level(time);
+    if (talk > 0) {
+      target = Object.assign({}, target, {
+        jawOpen: Math.max(target.jawOpen || 0, talk * 0.75),
+        funnel: Math.max(target.funnel || 0, talk * 0.25),
+        pucker: (target.pucker || 0) * (1 - talk)
+      });
+    }
 
     alien.update(target, dt, time);
     renderer.render(scene, camera);

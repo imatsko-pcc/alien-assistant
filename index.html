@@ -25,16 +25,45 @@
       <button id="camBtn" class="btn primary">Start camera</button>
       <button id="mirrorBtn" class="btn" title="Mirror: your left side shows on the left">Mirror: on</button>
       <button id="previewBtn" class="btn" title="Show your camera picture">Preview: off</button>
+      <button id="muteBtn" class="btn" title="Alien voice on/off">🔊 Voice: on</button>
+      <button id="voiceBtn" class="btn" title="Voice settings">⚙ Voice settings</button>
     </div>
+    <form id="sayForm" class="panel say" autocomplete="off">
+      <input id="sayText" type="text" maxlength="300" placeholder="Type something for the alien to say…" aria-label="Text for the alien to say">
+      <button id="sayBtn" class="btn primary" type="submit">Speak</button>
+    </form>
     <p id="status" class="status">Demo mode. Start the camera and the alien copies your face.</p>
     <p class="privacy">Your video stays on this device. Face tracking runs in your browser.</p>
   </footer>
 
   <video id="video" class="preview hidden" playsinline muted></video>
 
+  <form id="voicePanel" class="panel voice-panel hidden" autocomplete="off" aria-label="Voice settings">
+    <div class="vp-head"><b>VOICE SETTINGS</b><button type="button" id="vClose" class="vp-x" aria-label="Close">✕</button></div>
+    <label class="v-check"><input type="checkbox" id="vOn"> Alien talks</label>
+    <label class="v-check"><input type="checkbox" id="vReact"> React out loud to my expressions</label>
+    <label>Voice engine
+      <select id="vEngine">
+        <option value="eleven">ElevenLabs</option>
+        <option value="browser">Browser voice (free)</option>
+      </select>
+    </label>
+    <label id="vKeyRow">ElevenLabs API key
+      <input type="password" id="vKey" placeholder="Paste your key" spellcheck="false">
+    </label>
+    <label id="vVoiceRow">Voice <select id="vVoice"><option value="">Add a key to load voices</option></select></label>
+    <label class="v-slider">Pitch <output id="vPitchOut"></output><input type="range" id="vPitch" min="0.8" max="2" step="0.05"></label>
+    <label class="v-slider">Speed <output id="vSpeedOut"></output><input type="range" id="vSpeed" min="0.6" max="1.6" step="0.05"></label>
+    <label class="v-slider">Volume <output id="vVolOut"></output><input type="range" id="vVol" min="0" max="1" step="0.05"></label>
+    <button type="button" id="vTest" class="btn primary">Test voice</button>
+    <p id="vStatus" class="v-status"></p>
+    <p class="v-fine">Your key is saved only in this browser and sent only to ElevenLabs. Never put it in the code or on GitHub.</p>
+  </form>
+
   <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
   <script src="js/alien-head.js"></script>
   <script src="js/face-tracker.js"></script>
+  <script src="js/voice.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
