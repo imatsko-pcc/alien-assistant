@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alien Head 3D</title>
+  <meta name="description" content="A 3D alien head that copies your facial expressions through your webcam.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="scene" aria-label="3D alien head"></canvas>
+
+  <header class="top">
+    <div class="brand">
+      <h1>ALIEN HEAD <span>3D</span></h1>
+      <p>Make a face. The alien makes it too.</p>
+    </div>
+    <div id="mood" class="chip" role="status" aria-live="polite">😐 Neutral</div>
+  </header>
+
+  <footer class="bottom">
+    <div class="panel controls">
+      <button id="camBtn" class="btn primary">Start camera</button>
+      <button id="mirrorBtn" class="btn" title="Mirror: your left side shows on the left">Mirror: on</button>
+      <button id="previewBtn" class="btn" title="Show your camera picture">Preview: off</button>
+    </div>
+    <p id="status" class="status">Demo mode. Start the camera and the alien copies your face.</p>
+    <p class="privacy">Your video stays on this device. Face tracking runs in your browser.</p>
+  </footer>
+
+  <video id="video" class="preview hidden" playsinline muted></video>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script src="js/alien-head.js"></script>
+  <script src="js/face-tracker.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
