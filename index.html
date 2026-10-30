@@ -48,9 +48,13 @@
         <option value="browser">Browser voice (free)</option>
       </select>
     </label>
-    <label id="vKeyRow">ElevenLabs API key
-      <input type="password" id="vKey" placeholder="Paste your key" spellcheck="false">
-    </label>
+    <div id="vKeyRow" class="v-key">
+      <label for="vKey">ElevenLabs API key</label>
+      <div class="v-key-row">
+        <input type="text" id="vKey" placeholder="Paste your key (sk_…)" spellcheck="false" autocapitalize="off" autocorrect="off" data-lpignore="true" data-1p-ignore>
+        <button type="button" id="vKeySave" class="btn">Save key</button>
+      </div>
+    </div>
     <label id="vVoiceRow">Voice <select id="vVoice"><option value="">Add a key to load voices</option></select></label>
     <label class="v-slider">Pitch <output id="vPitchOut"></output><input type="range" id="vPitch" min="0.8" max="2" step="0.05"></label>
     <label class="v-slider">Speed <output id="vSpeedOut"></output><input type="range" id="vSpeed" min="0.6" max="1.6" step="0.05"></label>

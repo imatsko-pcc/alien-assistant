@@ -280,17 +280,20 @@
   async function loadVoices() {
     const sel = $('vVoice');
     if (!vs.apiKey) { sel.innerHTML = '<option value="">Add a key to load voices</option>'; return; }
-    $('vStatus').textContent = 'Loading your ElevenLabs voices…';
+    $('vStatus').textContent = 'Key saved. Loading your ElevenLabs voices…';
+    let list;
     try {
-      const list = await voice.listVoices();
-      sel.textContent = '';
-      list.forEach((v) => sel.add(new Option(v.name, v.id)));
-      if (!list.some((v) => v.id === vs.voiceId) && list.length) { vs.voiceId = list[0].id; voice.save(); }
-      sel.value = vs.voiceId;
-      $('vStatus').textContent = list.length + ' voices loaded.';
+      list = await voice.listVoices();
+      $('vStatus').textContent = 'Key works! ' + list.length + ' voices loaded. Press Test voice.';
     } catch (e) {
-      $('vStatus').textContent = e.message;
+      // A key without "Voices: read" can still speak with ElevenLabs' standard voices
+      list = voice.STANDARD_VOICES;
+      $('vStatus').textContent = e.message + ' Showing ElevenLabs standard voices instead. Press Test voice to check the key.';
     }
+    sel.textContent = '';
+    list.forEach((v) => sel.add(new Option(v.name, v.id)));
+    if (!list.some((v) => v.id === vs.voiceId) && list.length) { vs.voiceId = list[0].id; voice.save(); }
+    sel.value = vs.voiceId;
   }
 
   voice.onError((m) => { $('vStatus').textContent = m + ' Using the browser voice for now.'; status(m); });
@@ -304,14 +307,29 @@
     }
   });
   $('vClose').addEventListener('click', () => $('voicePanel').classList.add('hidden'));
-  $('vTest').addEventListener('click', () => {
-    $('vStatus').textContent = '';
-    voice.speak("Greetings, Earthling! This is my voice. Do you like it?", true);
+  $('vTest').addEventListener('click', async () => {
+    if ($('vKey').value.trim() !== vs.apiKey) saveKey();
+    $('vStatus').textContent = voice.usingEleven ? 'Asking ElevenLabs…' : 'Using the free browser voice (no ElevenLabs key saved).';
+    const ok = await voice.speak('Greetings, Earthling! This is my voice. Do you like it?', true);
+    if (ok && voice.usingEleven) $('vStatus').textContent = 'ElevenLabs voice working!';
   });
   $('vOn').addEventListener('change', (ev) => { setVoice({ enabled: ev.target.checked }); if (!vs.enabled) voice.stop(); });
   $('vReact').addEventListener('change', (ev) => setVoice({ reactions: ev.target.checked }));
   $('vEngine').addEventListener('change', (ev) => { setVoice({ engine: ev.target.value }); if (ev.target.value === 'eleven') loadVoices(); });
-  $('vKey').addEventListener('change', (ev) => { setVoice({ apiKey: ev.target.value.trim(), voiceId: '' }); loadVoices(); });
+  // Save the key on paste, on leaving the box, on Enter, or with the button
+  function saveKey() {
+    const key = $('vKey').value.replace(/[\s"'`]/g, '');
+    $('vKey').value = key;
+    if (key === vs.apiKey) { if (key) loadVoices(); return; }
+    setVoice({ apiKey: key, voiceId: '' });
+    if (!key) { $('vStatus').textContent = 'Key removed. Using the browser voice.'; loadVoices(); return; }
+    if (!/^sk_/.test(key)) $('vStatus').textContent = 'Saved, but ElevenLabs keys usually start with "sk_". Check you copied the whole key.';
+    loadVoices();
+  }
+  $('vKey').addEventListener('change', saveKey);
+  $('vKey').addEventListener('paste', () => setTimeout(saveKey, 0));
+  $('vKey').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); saveKey(); } });
+  $('vKeySave').addEventListener('click', saveKey);
   $('vVoice').addEventListener('change', (ev) => setVoice({ voiceId: ev.target.value }));
   [['vPitch', 'pitch'], ['vSpeed', 'speed'], ['vVol', 'volume']].forEach(([id, key]) => {
     $(id).addEventListener('input', (ev) => setVoice({ [key]: Number(ev.target.value) }));

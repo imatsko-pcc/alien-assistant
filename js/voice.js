@@ -83,11 +83,30 @@
     }));
     if (!r.ok) {
       let detail = '';
-      try { const j = await r.json(); detail = (j.detail && (j.detail.message || j.detail.status)) || ''; } catch (e) { /* not JSON */ }
-      throw new Error(r.status === 401 ? 'ElevenLabs rejected the API key.' : 'ElevenLabs error ' + r.status + (detail ? ': ' + detail : '') + '.');
+      try {
+        const d = (await r.json()).detail;
+        detail = typeof d === 'string' ? d : (d && (d.message || d.status)) || '';
+      } catch (e) { /* not JSON */ }
+      let msg;
+      if (r.status === 401 && /permission/i.test(detail)) msg = 'This key is missing a permission: ' + detail;
+      else if (r.status === 401) msg = 'ElevenLabs rejected the API key' + (detail ? ' (' + detail + ')' : '') + '. Check you pasted the whole key.';
+      else if (r.status === 402 || /quota|credit/i.test(detail)) msg = "Out of ElevenLabs credits, or over this key's credit limit.";
+      else msg = 'ElevenLabs error ' + r.status + (detail ? ': ' + detail : '') + '.';
+      throw new Error(msg);
     }
     return r;
   }
+
+  // ElevenLabs' standard voices, for keys that can speak but can't list voices
+  const STANDARD_VOICES = [
+    { id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica' },
+    { id: 'pFZP5JQG7iPjIQuC4Bku', name: 'Lily' },
+    { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Laura' },
+    { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
+    { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice' },
+    { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie' },
+    { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam' }
+  ];
 
   async function listVoices() {
     if (!settings.apiKey) return [];
@@ -97,8 +116,9 @@
 
   async function ensureVoice() {
     if (settings.voiceId) return settings.voiceId;
-    const voices = await listVoices();
-    if (!voices.length) throw new Error('No voices found in this ElevenLabs account.');
+    let voices;
+    try { voices = await listVoices(); } catch (e) { voices = STANDARD_VOICES; }
+    if (!voices.length) voices = STANDARD_VOICES;
     const pref = voices.find((v) => /jessica|lily|laura|charlotte|rachel|alice/i.test(v.name)) || voices[0];
     settings.voiceId = pref.id;
     save();
@@ -138,14 +158,17 @@
     synth.speak(u);
   }
 
-  /** Say a line. A new line interrupts the previous one. force ignores the on/off switch. */
+  /**
+   * Say a line. A new line interrupts the previous one. force ignores the
+   * on/off switch. Resolves true when ElevenLabs is speaking it.
+   */
   async function speak(text, force) {
-    if (!force && !settings.enabled) return;
+    if (!force && !settings.enabled) return false;
     stop();
     const my = token;
     const line = String(text || '').replace(/\s+/g, ' ').trim();
-    if (!line) return;
-    if (!useEleven()) { browserSpeak(line, my); return; }
+    if (!line) return false;
+    if (!useEleven()) { browserSpeak(line, my); return false; }
     try {
       const url = await elevenAudio(line);
       if (my !== token) return; // something newer was said while loading
@@ -158,17 +181,19 @@
       hookAnalyser(el);
       audio = el;
       await el.play();
+      return true;
     } catch (e) {
-      if (my !== token) return;
+      if (my !== token) return false;
       audio = null;
-      if (e.name === 'NotAllowedError') return; // browser blocks sound until the first click
+      if (e.name === 'NotAllowedError') return false; // browser blocks sound until the first click
       onError(e.message || String(e));
       browserSpeak(line, my); // still say it, with the free voice
+      return false;
     }
   }
 
   window.AlienVoice = {
-    settings, save, speak, stop, listVoices, level, speaking,
+    settings, save, speak, stop, listVoices, level, speaking, STANDARD_VOICES,
     get usingEleven() { return useEleven(); },
     onError(fn) { onError = fn; }
   };

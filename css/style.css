@@ -135,7 +135,12 @@ html, body {
 .voice-panel label.v-check { flex-direction: row; align-items: center; gap: 7px; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--text); }
 .voice-panel label.v-slider { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
 .voice-panel output { color: #67e8f9; }
-.voice-panel select, .voice-panel input[type="password"] {
+.v-key { display: flex; flex-direction: column; gap: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.v-key-row { display: flex; gap: 6px; }
+.v-key-row input { flex: 1; -webkit-text-security: disc; }
+.v-key-row input:focus { -webkit-text-security: none; }
+.v-key-row .btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+.voice-panel select, .voice-panel input[type="text"] {
   font: 13px 'Inter', system-ui, sans-serif; color: var(--text); background: #020617;
   border: 1px solid #334155; border-radius: 8px; padding: 6px 8px; text-transform: none; min-width: 0;
 }
